@@ -3,9 +3,9 @@ const el=id=>document.getElementById(id);
 const state={mode:"image",files:[]};
 const input=el("files"),drop=el("drop"),convert=el("convert");
 const modes={
-image:{title:"Image converter",desc:"Convert images to PNG, JPG or WEBP.",accept:"image/*",multiple:true,formats:[["image/png","PNG"],["image/jpeg","JPG"],["image/webp","WEBP"]]},
-compress:{title:"Image compressor",desc:"Reduce image file size with quality control.",accept:"image/*",multiple:true,formats:[["image/webp","WEBP"],["image/jpeg","JPG"]]},
-resize:{title:"Image resizer",desc:"Resize images while preserving proportions.",accept:"image/*",multiple:true,formats:[["image/png","PNG"],["image/jpeg","JPG"],["image/webp","WEBP"]]},
+image:{title:"Image converter",desc:"Convert images to PNG, JPG or WEBP.",accept:"image/*,.heic,.heif",multiple:true,formats:[["image/png","PNG"],["image/jpeg","JPG"],["image/webp","WEBP"]]},
+compress:{title:"Image compressor",desc:"Reduce image file size with quality control.",accept:"image/*,.heic,.heif",multiple:true,formats:[["image/webp","WEBP"],["image/jpeg","JPG"]]},
+resize:{title:"Image resizer",desc:"Resize images while preserving proportions.",accept:"image/*,.heic,.heif",multiple:true,formats:[["image/png","PNG"],["image/jpeg","JPG"],["image/webp","WEBP"]]},
 pdf:{title:"PDF to image",desc:"Export PDF pages as PNG or JPG files.",accept:".pdf,application/pdf",multiple:false,formats:[["image/png","PNG"],["image/jpeg","JPG"]]},
 imagepdf:{title:"Image to PDF",desc:"Combine JPG, PNG, WEBP and HEIC images into one compressed PDF.",accept:"image/*,.heic,.heif",multiple:true,formats:[["application/pdf","PDF"]]},
 pdfpdf:{title:"PDF to PDF optimizer",desc:"Rebuild a PDF as a compressed, image-based PDF. Text will not remain selectable.",accept:".pdf,application/pdf",multiple:false,formats:[["application/pdf","PDF"]]}
