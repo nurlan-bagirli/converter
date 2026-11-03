@@ -1,120 +1,16 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101827">
-  <meta name="description" content="Free online file converter. Convert images to PNG, JPG and WebP, turn PDFs into images, and combine images into PDF — right in your browser.">
-  <title>Convertly — Free Online File Converter</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script defer src="app.js"></script>
-</head>
-<body>
-  <header class="topbar">
-    <a class="brand" href="#" aria-label="Convertly home"><span class="brand-mark">C</span><span>convertly</span></a>
-    <nav><a href="#tools">Tools</a><a href="#how">How it works</a><a href="#privacy">Privacy</a></nav>
-    <a class="header-cta" href="#tools">Start converting <span>↗</span></a>
-  </header>
-
-  <main>
-    <section class="hero">
-      <div class="hero-glow"></div>
-      <div class="eyebrow"><span class="live-dot"></span> SIMPLE · FAST · PRIVATE</div>
-      <h1>Your files,<br><span>your format.</span></h1>
-      <p class="hero-copy">Convert images and PDFs in seconds. No account, no watermark, no complicated steps.</p>
-      <div class="hero-actions"><a class="primary-btn" href="#tools">Explore converters <span>↓</span></a><span class="hero-note">Free tools · Files stay on your device</span></div>
-      <div class="format-cloud" aria-label="Supported formats"><span>JPG</span><i>↔</i><span>PNG</span><i>↔</i><span>WEBP</span><b>·</b><span>PDF</span></div>
-      <div class="hero-art" aria-hidden="true">
-        <div class="float-file file-one"><b>JPG</b><span>photo.jpg</span><small>2.4 MB</small></div>
-        <div class="convert-arrow">↘</div>
-        <div class="float-file file-two"><b class="png">PNG</b><span>photo.png</span><small>Ready to go</small></div>
-        <div class="orbit orbit-a"></div><div class="orbit orbit-b"></div>
-      </div>
-    </section>
-
-    <section class="trust-row">
-      <div><span class="trust-icon">⌁</span><span><b>100% browser-based</b><small>Where supported, files never upload</small></span></div>
-      <div><span class="trust-icon">✳</span><span><b>No signup required</b><small>Open a tool and get started</small></span></div>
-      <div><span class="trust-icon">◈</span><span><b>Free to use</b><small>No watermark on your output</small></span></div>
-    </section>
-
-    <section class="tools-section" id="tools">
-      <div class="section-heading"><div><div class="eyebrow dark-eyebrow">THE TOOLBOX</div><h2>What do you want to <span>convert?</span></h2></div><p>Choose a tool, add your file, and download the result. It's that simple.</p></div>
-      <div class="tool-tabs" role="tablist" aria-label="Tool categories">
-        <button class="tab active" data-filter="all">All tools <span>6</span></button>
-        <button class="tab" data-filter="image">Image</button><button class="tab" data-filter="pdf">PDF</button>
-      </div>
-      <div class="tool-grid">
-        <article class="tool-card featured" data-category="image" data-tool="image">
-          <div class="card-top"><span class="tool-icon purple">▧</span><span class="tag">POPULAR</span></div>
-          <h3>Image converter</h3><p>Convert JPG, PNG, WEBP, BMP and GIF images between formats.</p>
-          <button class="text-link open-tool" data-tool="image">Convert image <span>→</span></button>
-          <div class="format-chips"><span>JPG</span><span>PNG</span><span>WEBP</span><span>BMP</span></div>
-        </article>
-        <article class="tool-card" data-category="pdf" data-tool="pdf-image">
-          <div class="card-top"><span class="tool-icon coral">▤</span><span class="tag muted-tag">PDF</span></div>
-          <h3>PDF to image</h3><p>Turn PDF pages into crisp PNG or JPG images, page by page.</p>
-          <button class="text-link open-tool" data-tool="pdf-image">Convert PDF <span>→</span></button>
-          <div class="format-chips"><span>PDF</span><span>PNG</span><span>JPG</span></div>
-        </article>
-        <article class="tool-card" data-category="pdf" data-tool="image-pdf">
-          <div class="card-top"><span class="tool-icon blue">▧</span><span class="tag muted-tag">PDF</span></div>
-          <h3>Image to PDF</h3><p>Combine one or more images into a single downloadable PDF.</p>
-          <button class="text-link open-tool" data-tool="image-pdf">Create PDF <span>→</span></button>
-          <div class="format-chips"><span>JPG</span><span>PNG</span><span>WEBP</span><span>PDF</span></div>
-        </article>
-        <article class="tool-card" data-category="image" data-tool="compress">
-          <div class="card-top"><span class="tool-icon green">⌁</span><span class="tag muted-tag">IMAGE</span></div>
-          <h3>Image compressor</h3><p>Reduce image file size and choose the quality you need.</p>
-          <button class="text-link open-tool" data-tool="compress">Compress image <span>→</span></button>
-          <div class="format-chips"><span>JPG</span><span>WEBP</span><span>PNG*</span></div>
-        </article>
-        <article class="tool-card" data-category="image" data-tool="resize">
-          <div class="card-top"><span class="tool-icon amber">⤢</span><span class="tag muted-tag">IMAGE</span></div>
-          <h3>Image resizer</h3><p>Resize images by pixels while keeping the original proportions.</p>
-          <button class="text-link open-tool" data-tool="resize">Resize image <span>→</span></button>
-          <div class="format-chips"><span>JPG</span><span>PNG</span><span>WEBP</span></div>
-        </article>
-        <article class="tool-card" data-category="pdf" data-tool="pdf-info">
-          <div class="card-top"><span class="tool-icon slate">▣</span><span class="tag muted-tag">PDF</span></div>
-          <h3>PDF page preview</h3><p>Inspect a PDF and export selected pages as image files.</p>
-          <button class="text-link open-tool" data-tool="pdf-image">Open PDF tool <span>→</span></button>
-          <div class="format-chips"><span>PDF</span><span>PNG</span><span>JPG</span></div>
-        </article>
-      </div>
-      <p class="small-note">* PNG compression uses lossless optimization only where supported by the browser. More tools are on the roadmap.</p>
-    </section>
-
-    <section class="workspace-section" id="workspace">
-      <div class="workspace" id="converter">
-        <div class="workspace-head"><div><div class="eyebrow dark-eyebrow">READY WHEN YOU ARE</div><h2 id="tool-title">Image converter</h2><p id="tool-description">Change your image format in a few clicks.</p></div><span class="secure-pill"><span>●</span> Private processing</span></div>
-        <div class="controls-row">
-          <label class="field-label" for="output-format">Convert to</label>
-          <select id="output-format"><option value="image/png">PNG</option><option value="image/jpeg">JPG</option><option value="image/webp">WEBP</option></select>
-          <label class="quality-control" id="quality-wrap">Quality <input id="quality" type="range" min="10" max="100" value="90"><output id="quality-value">90%</output></label>
-          <div class="resize-fields" id="resize-fields" hidden><input id="resize-width" type="number" min="1" placeholder="Width"><span>×</span><input id="resize-height" type="number" min="1" placeholder="Height"></div>
-          <label class="page-format" id="page-format-wrap" hidden>Page output <select id="page-format"><option value="image/png">PNG</option><option value="image/jpeg">JPG</option></select></label>
-        </div>
-        <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose files">
-          <input id="file-input" type="file" hidden accept="image/*">
-          <div class="upload-symbol">↑</div><h3>Drop your files here</h3><p>or <button type="button" class="browse-btn" id="browse">browse files</button> from your device</p><small id="accept-note">Images · JPG, PNG, WEBP, BMP, GIF</small>
-        </div>
-        <div class="file-list" id="file-list" hidden></div>
-        <div class="workspace-actions"><span class="limit-note" id="limit-note">Files are processed locally in your browser.</span><button class="primary-btn convert-btn" id="convert-btn" disabled>Convert now <span>→</span></button></div>
-        <div class="status" id="status" role="status" aria-live="polite"></div>
-      </div>
-    </section>
-
-    <section class="how-section" id="how"><div class="eyebrow dark-eyebrow">NO FUSS, JUST RESULTS</div><h2>Three steps. <span>That's it.</span></h2><div class="steps"><div><b>01</b><span class="step-icon">↑</span><h3>Choose your file</h3><p>Drag and drop or browse your device. No account needed.</p></div><div><b>02</b><span class="step-icon">⚙</span><h3>Pick a format</h3><p>Choose the output format and adjust settings if available.</p></div><div><b>03</b><span class="step-icon">↓</span><h3>Download</h3><p>Your converted file is ready to save. Easy as that.</p></div></div></section>
-
-    <section class="privacy-section" id="privacy"><div class="privacy-mark">◈</div><div><div class="eyebrow">YOUR FILES ARE YOUR BUSINESS</div><h2>Private by <span>design.</span></h2><p>Image conversion and PDF rendering happen in your browser. Your files are not sent to a Convertly server for these tools. Keep the tab open until your download is complete.</p></div></section>
-  </main>
-  <footer><a class="brand" href="#"><span class="brand-mark">C</span><span>convertly</span></a><span>Useful file tools, without the fuss.</span><span>© <span id="year"></span> Convertly</span></footer>
-  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-</body>
-</html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Free online image and PDF converter. Convert files privately in your browser."><title>Convertly — Free Online Converter</title><link rel="stylesheet" href="styles.css"><script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script><script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script defer src="app.js"></script></head>
+<body><header class="header"><a class="logo" href="#">◈ convertly</a><nav><a href="#tools">Tools</a><a href="#privacy">Privacy</a></nav><a class="header-cta" href="#tools">Start converting ↗</a></header>
+<main><section class="hero"><div class="eyebrow">SIMPLE · FAST · PRIVATE</div><h1>Your files,<br><span>your format.</span></h1><p>Convert images and PDFs in seconds. No account, no watermark, no complicated steps.</p><a class="button" href="#tools">Explore converters ↓</a><div class="formats">JPG <b>↔</b> PNG <b>↔</b> WEBP <b>·</b> PDF</div></section>
+<section class="trust"><div><b>Browser-based</b><small>Files stay on your device</small></div><div><b>No signup</b><small>Start converting instantly</small></div><div><b>Free tools</b><small>No watermark</small></div></section>
+<section id="tools" class="tools"><div class="eyebrow dark">THE TOOLBOX</div><h2>What do you want to <span>convert?</span></h2><div class="cards">
+<article><div class="icon purple">▧</div><h3>Image converter</h3><p>Convert JPG, PNG, WEBP and other browser-supported images.</p><button data-mode="image">Convert image →</button></article>
+<article><div class="icon coral">▤</div><h3>PDF to image</h3><p>Export PDF pages as PNG or JPG images.</p><button data-mode="pdf">Convert PDF →</button></article>
+<article><div class="icon blue">▧</div><h3>Image to PDF</h3><p>Combine one or more images into a single PDF.</p><button data-mode="imagepdf">Create PDF →</button></article>
+<article><div class="icon green">⌁</div><h3>Image compressor</h3><p>Reduce image size with adjustable quality.</p><button data-mode="compress">Compress image →</button></article>
+<article><div class="icon amber">⤢</div><h3>Image resizer</h3><p>Resize images while keeping proportions.</p><button data-mode="resize">Resize image →</button></article></div></section>
+<section class="workspace" id="workspace"><div class="eyebrow dark">READY WHEN YOU ARE</div><h2 id="tool-title">Image converter</h2><p id="tool-desc">Choose a file and your preferred output format.</p>
+<div class="settings"><label>Output format <select id="format"><option value="image/png">PNG</option><option value="image/jpeg">JPG</option><option value="image/webp">WEBP</option></select></label><label id="quality-label">Quality <input id="quality" type="range" min="10" max="100" value="90"><output id="quality-value">90%</output></label><label id="resize-label" hidden>Width <input id="width" type="number" min="1" placeholder="Width"> Height <input id="height" type="number" min="1" placeholder="Height"></label><label id="pdf-format-label" hidden>Page format <select id="pdf-format"><option value="image/png">PNG</option><option value="image/jpeg">JPG</option></select></label></div>
+<div class="drop" id="drop"><div class="upload">↑</div><h3>Drop files here</h3><p>or <button id="browse" type="button">browse your device</button></p><small id="file-hint">JPG, PNG, WEBP and other image formats</small><input id="files" type="file" hidden accept="image/*"></div><div id="file-list" class="file-list"></div><div class="actions"><span id="privacy-note">Files are processed locally in your browser.</span><button class="button" id="convert" disabled>Convert now →</button></div><p id="status" role="status"></p></section>
+<section id="privacy" class="privacy"><div class="eyebrow">YOUR FILES ARE YOUR BUSINESS</div><h2>Private by <span>design.</span></h2><p>Image conversion and PDF rendering happen in your browser. Files are not uploaded to a Convertly server. Keep this tab open until downloads finish.</p></section></main>
+<footer><a class="logo" href="#">◈ convertly</a><span>Useful file tools, without the fuss.</span><span>© <span id="year"></span> Convertly</span></footer></body></html>
