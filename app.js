@@ -19,7 +19,7 @@ function add(files){const pdfMode=state.mode==="pdf"||state.mode==="pdfpdf";cons
 async function normalizeImage(file){
   const name=(file.name||"image").toLowerCase();
   const type=(file.type||"").toLowerCase();
-  const isHeic=/\\.(heic|heif)$/i.test(name)||type.includes("heic")||type.includes("heif");
+  const isHeic=/\.(heic|heif)$/i.test(name)||type.includes("heic")||type.includes("heif");
   if(isHeic){
     const decoder=window.HeicTo;
     if(typeof decoder!=="function")throw Error("HEIC_ENGINE_NOT_LOADED: HeicTo global is missing. Check CDN/network and reload.");
@@ -27,7 +27,7 @@ async function normalizeImage(file){
       if(typeof decoder.isHeic==="function" && !(await decoder.isHeic(file)))throw Error("The file extension is HEIC, but its internal signature is not recognized as HEIC/HEIF.");
       const result=await decoder({blob:file,type:"image/jpeg",quality:0.92});
       if(!(result instanceof Blob))throw Error("Decoder returned "+Object.prototype.toString.call(result)+" instead of a Blob.");
-      return {blob:result,name:(file.name||"image").replace(/\\.(heic|heif)$/i,"")+".jpg"};
+      return {blob:result,name:(file.name||"image").replace(/\.(heic|heif)$/i,"")+".jpg"};
     }catch(err){
       console.error("Convertly HEIC diagnostic:",err);
       const detail=err&&err.message?err.message:String(err);
