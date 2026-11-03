@@ -8,6 +8,7 @@ compress:{title:"Image compressor",desc:"Reduce image file size with quality con
 resize:{title:"Image resizer",desc:"Resize images while preserving proportions.",accept:"image/*,.heic,.heif",multiple:true,formats:[["image/png","PNG"],["image/jpeg","JPG"],["image/webp","WEBP"]]},
 pdf:{title:"PDF to image",desc:"Export PDF pages as PNG or JPG files.",accept:".pdf,application/pdf",multiple:false,formats:[["image/png","PNG"],["image/jpeg","JPG"]]},
 imagepdf:{title:"Image to PDF",desc:"Combine JPG, PNG, WEBP and HEIC images into one compressed PDF.",accept:"image/*,.heic,.heif",multiple:true,formats:[["application/pdf","PDF"]]},
+filespdf:{title:"Images + PDF to PDF",desc:"Combine JPG, PNG, HEIC, WEBP and existing PDF files into one PDF.",accept:".pdf,application/pdf,image/*,.heic,.heif",multiple:true,formats:[["application/pdf","PDF"]]},
 pdfpdf:{title:"PDF to PDF optimizer",desc:"Rebuild a PDF as a compressed, image-based PDF. Text will not remain selectable.",accept:".pdf,application/pdf",multiple:false,formats:[["application/pdf","PDF"]]},
 pdfmerge:{title:"Merge PDFs",desc:"Combine multiple PDF files in the selected order.",accept:".pdf,application/pdf",multiple:true,formats:[["application/pdf","PDF"]]},
 pdfsplit:{title:"Split PDF",desc:"Extract selected pages into a separate PDF.",accept:".pdf,application/pdf",multiple:false,formats:[["application/pdf","PDF"]]},
@@ -18,7 +19,7 @@ crop:{title:"Crop image",desc:"Crop an image using pixel coordinates.",accept:"i
 rotate:{title:"Rotate image",desc:"Rotate an image by 90, 180 or 270 degrees.",accept:"image/*,.heic,.heif",multiple:true,formats:[["image/webp","WEBP"],["image/jpeg","JPG"],["image/png","PNG"]]}
 };
 function message(text,error=false){el("status").textContent=text;el("status").style.color=error?"#c44":"#278b69";}
-function mode(name){state.mode=name;state.files=[];const m=modes[name];el("tool-title").textContent=m.title;el("tool-desc").textContent=m.desc;input.accept=m.accept;input.multiple=m.multiple;el("format").innerHTML=m.formats.map(f=>'<option value="'+f[0]+'">'+f[1]+'</option>').join("");if(name==="image"||name==="compress"||name==="resize")el("format").value="image/webp";el("quality-label").hidden=!["image","compress"].includes(name);el("resize-label").hidden=name!=="resize";el("pages-label").hidden=!["pdfsplit","pdforganize"].includes(name);el("rotation-label").hidden=!["pdforganize","rotate"].includes(name);el("crop-label").hidden=name!=="crop";el("image-format-note").hidden=!(["image","compress","resize","crop","rotate"].includes(name));el("pdf-format-label").hidden=!(name==="pdf"||name==="pdfextract");el("pdf-quality-label").hidden=!(name==="imagepdf"||name==="pdfpdf"||name==="pdfcompress");el("pdf-size-label").hidden=!(name==="imagepdf"||name==="pdfpdf"||name==="pdfcompress");el("pdf-raster-note").hidden=!(["pdfpdf","pdfcompress"].includes(name));el("format-label").hidden=name.startsWith("pdf");el("file-hint").textContent=name==="pdfmerge"?"PDF documents · Select multiple files":name.startsWith("pdf")?"PDF documents · Choose one PDF file":"Images · JPG, PNG, WEBP, HEIC and HEIF";render();message("");el("workspace").scrollIntoView({behavior:"smooth",block:"center"});}
+function mode(name){state.mode=name;state.files=[];const m=modes[name];el("tool-title").textContent=m.title;el("tool-desc").textContent=m.desc;input.accept=m.accept;input.multiple=m.multiple;el("format").innerHTML=m.formats.map(f=>'<option value="'+f[0]+'">'+f[1]+'</option>').join("");if(name==="image"||name==="compress"||name==="resize")el("format").value="image/webp";el("quality-label").hidden=!["image","compress"].includes(name);el("resize-label").hidden=name!=="resize";el("pages-label").hidden=!["pdfsplit","pdforganize"].includes(name);el("rotation-label").hidden=!["pdforganize","rotate"].includes(name);el("crop-label").hidden=name!=="crop";el("image-format-note").hidden=!(["image","compress","resize","crop","rotate"].includes(name));el("pdf-format-label").hidden=!(name==="pdf"||name==="pdfextract");el("pdf-quality-label").hidden=!(name==="imagepdf"||name==="pdfpdf"||name==="pdfcompress");el("pdf-size-label").hidden=!(name==="imagepdf"||name==="pdfpdf"||name==="pdfcompress");el("pdf-raster-note").hidden=!(["pdfpdf","pdfcompress"].includes(name));el("format-label").hidden=name.startsWith("pdf");el("file-hint").textContent=name==="filespdf"?"PDF + JPG + PNG + WEBP + HEIC · Select multiple files":name==="pdfmerge"?"PDF documents · Select multiple files":name.startsWith("pdf")?"PDF documents · Choose one PDF file":"Images · JPG, PNG, WEBP, HEIC and HEIF";render();message("");el("workspace").scrollIntoView({behavior:"smooth",block:"center"});}
 function render(){el("file-list").innerHTML="";state.files.forEach((f,i)=>{const row=document.createElement("div");row.className="file-item";const n=document.createElement("span");n.textContent=f.name;const s=document.createElement("span");s.textContent=(f.size/1024/1024).toFixed(2)+" MB";const b=document.createElement("button");b.textContent="Remove";b.onclick=()=>{state.files.splice(i,1);render()};row.append(n,s,b);el("file-list").append(row)});convert.disabled=!state.files.length;}
 function isPdf(f){return f.type==="application/pdf"||f.name.toLowerCase().endsWith(".pdf");}
 function isImage(f){const name=(f.name||"").toLowerCase();const type=(f.type||"").toLowerCase();return type.startsWith("image/")||/\.(heic|heif|jpg|jpeg|png|webp|gif|bmp|tif|tiff|avif)$/i.test(name)||type.includes("heic")||type.includes("heif");}
@@ -57,6 +58,46 @@ async function pdfLib(){if(!window.PDFLib)throw Error("PDF editing library is lo
 async function mergePdfs(){const {PDFDocument}=await pdfLib();const out=await PDFDocument.create();for(let i=0;i<state.files.length;i++){message("Adding PDF "+(i+1)+" of "+state.files.length+"…");const src=await PDFDocument.load(await state.files[i].arrayBuffer());const pages=await out.copyPages(src,src.getPageIndices());pages.forEach(p=>out.addPage(p));}save(new Blob([await out.save()],{type:"application/pdf"}),"merged.pdf");}
 async function splitPdf(){const {PDFDocument}=await pdfLib();const src=await PDFDocument.load(await state.files[0].arrayBuffer());const ids=parsePages(el("pages").value,src.getPageCount());if(!ids.length)throw Error("Enter pages, for example 1-3,5.");const out=await PDFDocument.create(),copied=await out.copyPages(src,ids);copied.forEach(p=>out.addPage(p));save(new Blob([await out.save()],{type:"application/pdf"}),"split-pages.pdf");}
 async function organizePdf(){const {PDFDocument,degrees}=await pdfLib();const src=await PDFDocument.load(await state.files[0].arrayBuffer());const total=src.getPageCount(),value=el("pages").value.trim();let order;if(value){order=value.split(",").map(x=>Number(x.trim())-1);if(order.some(n=>!Number.isInteger(n)||n<0||n>=total))throw Error("Use a comma-separated page order, e.g. 3,1,2. Omit pages to remove them.");}else order=src.getPageIndices();const out=await PDFDocument.create(),copied=await out.copyPages(src,order);copied.forEach(p=>out.addPage(p));const rotation=Number(el("rotation").value);out.getPages().forEach(p=>p.setRotation(degrees((p.getRotation().angle+rotation)%360)));save(new Blob([await out.save()],{type:"application/pdf"}),"organized.pdf");}
+
+async function filesToPdf(){
+  const {PDFDocument}=await pdfLib();
+  if(!state.files.length)throw Error("Choose at least one PDF or image.");
+  const out=await PDFDocument.create();
+  const quality=Number(el("pdf-quality").value)/100;
+  const maxEdge=Number(el("pdf-size").value);
+  for(let i=0;i<state.files.length;i++){
+    const file=state.files[i];
+    message("Adding "+file.name+" ("+(i+1)+" of "+state.files.length+")…");
+    if(isPdf(file)){
+      const src=await PDFDocument.load(await file.arrayBuffer());
+      const pages=await out.copyPages(src,src.getPageIndices());
+      pages.forEach(p=>out.addPage(p));
+    }else{
+      const normalized=await normalizeImage(file);
+      const img=await loadImage(normalized.blob);
+      const nw=img.naturalWidth||img.width,nh=img.naturalHeight||img.height;
+      if(!nw||!nh)throw Error("Could not read image: "+file.name);
+      const scale=Math.min(maxEdge/nw,maxEdge/nh,1);
+      const cw=Math.max(1,Math.round(nw*scale)),ch=Math.max(1,Math.round(nh*scale));
+      const canvas=document.createElement("canvas");canvas.width=cw;canvas.height=ch;
+      const ctx=canvas.getContext("2d");if(!ctx)throw Error("Could not process image: "+file.name);
+      ctx.fillStyle="#fff";ctx.fillRect(0,0,cw,ch);ctx.drawImage(img,0,0,cw,ch);
+      const jpg=await blob(canvas,"image/jpeg",quality);
+      const bytes=new Uint8Array(await jpg.arrayBuffer());
+      const embedded=await out.embedJpg(bytes);
+      const landscape=nw>nh,pageW=landscape?841.89:595.28,pageH=landscape?595.28:841.89,margin=24;
+      const fit=Math.min((pageW-margin*2)/embedded.width,(pageH-margin*2)/embedded.height);
+      const w=embedded.width*fit,h=embedded.height*fit;
+      const page=out.addPage([pageW,pageH]);
+      page.drawImage(embedded,{x:(pageW-w)/2,y:(pageH-h)/2,width:w,height:h});
+      canvas.width=0;canvas.height=0;img.src="";
+    }
+  }
+  if(!out.getPageCount())throw Error("No pages were added.");
+  message("Creating combined PDF…");
+  const bytes=await out.save();
+  save(new Blob([bytes],{type:"application/pdf"}),"convertly-combined.pdf");
+}
 async function imagesPdf(){
   const JsPDF=window.jspdf?.jsPDF||window.jsPDF;
   if(!JsPDF)throw Error("PDF creator is not available. Refresh the page and try again.");
@@ -99,7 +140,7 @@ async function imagesPdf(){
   message("Creating compressed PDF…");
   doc.save("converted-images.pdf");
 }
-convert.addEventListener("click",async()=>{convert.disabled=true;convert.textContent="Working…";try{if(state.mode==="pdf")await pdfWork();else if(state.mode==="pdfpdf"||state.mode==="pdfcompress")await pdfToPdf();else if(state.mode==="imagepdf")await imagesPdf();else if(state.mode==="pdfmerge")await mergePdfs();else if(state.mode==="pdfsplit")await splitPdf();else if(state.mode==="pdforganize")await organizePdf();else if(state.mode==="pdfextract")await pdfWork();else await imageWork();if(state.mode.startsWith("pdf"))message("Done! Your download is ready.");}catch(e){message(e.message||"Conversion failed.",true);}finally{convert.textContent="Convert now →";convert.disabled=!state.files.length;}});
+convert.addEventListener("click",async()=>{convert.disabled=true;convert.textContent="Working…";try{if(state.mode==="filespdf")await filesToPdf();else if(state.mode==="pdf")await pdfWork();else if(state.mode==="pdfpdf"||state.mode==="pdfcompress")await pdfToPdf();else if(state.mode==="imagepdf")await imagesPdf();else if(state.mode==="pdfmerge")await mergePdfs();else if(state.mode==="pdfsplit")await splitPdf();else if(state.mode==="pdforganize")await organizePdf();else if(state.mode==="pdfextract")await pdfWork();else await imageWork();if(state.mode.startsWith("pdf"))message("Done! Your download is ready.");}catch(e){message(e.message||"Conversion failed.",true);}finally{convert.textContent="Convert now →";convert.disabled=!state.files.length;}});
 el("browse").onclick=e=>{e.stopPropagation();input.click()};drop.onclick=()=>input.click();drop.onkeydown=e=>{if(e.key==="Enter")input.click()};input.onchange=()=>{add(input.files);input.value=""};
 ["dragenter","dragover"].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.add("drag")}));["dragleave","drop"].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.remove("drag")}));drop.addEventListener("drop",e=>add(e.dataTransfer.files));
 el("quality").oninput=()=>el("quality-value").textContent=el("quality").value+"%";el("pdf-quality").oninput=()=>el("pdf-quality-value").textContent=el("pdf-quality").value+"%";
