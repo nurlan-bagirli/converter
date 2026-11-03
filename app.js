@@ -86,7 +86,7 @@ async function imagesPdf(){
   message("Creating compressed PDF…");
   doc.save("converted-images.pdf");
 }
-convert.addEventListener("click",async()=>{convert.disabled=true;convert.textContent="Working…";try{if(state.mode==="pdf")await pdfWork();else if(state.mode==="pdfpdf")await pdfToPdf();else if(state.mode==="imagepdf")await imagesPdf();else await imageWork();message("Done! Your download is ready.");}catch(e){message(e.message||"Conversion failed.",true);}finally{convert.textContent="Convert now →";convert.disabled=!state.files.length;}});
+convert.addEventListener("click",async()=>{convert.disabled=true;convert.textContent="Working…";try{if(state.mode==="pdf")await pdfWork();else if(state.mode==="pdfpdf")await pdfToPdf();else if(state.mode==="imagepdf")await imagesPdf();else await imageWork();if(state.mode==="pdf"||state.mode==="pdfpdf"||state.mode==="imagepdf")message("Done! Your download is ready.");}catch(e){message(e.message||"Conversion failed.",true);}finally{convert.textContent="Convert now →";convert.disabled=!state.files.length;}});
 el("browse").onclick=e=>{e.stopPropagation();input.click()};drop.onclick=()=>input.click();drop.onkeydown=e=>{if(e.key==="Enter")input.click()};input.onchange=()=>{add(input.files);input.value=""};
 ["dragenter","dragover"].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.add("drag")}));["dragleave","drop"].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.remove("drag")}));drop.addEventListener("drop",e=>add(e.dataTransfer.files));
 el("quality").oninput=()=>el("quality-value").textContent=el("quality").value+"%";el("pdf-quality").oninput=()=>el("pdf-quality-value").textContent=el("pdf-quality").value+"%";
