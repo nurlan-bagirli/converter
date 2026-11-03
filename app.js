@@ -16,7 +16,26 @@ function render(){el("file-list").innerHTML="";state.files.forEach((f,i)=>{const
 function isPdf(f){return f.type==="application/pdf"||f.name.toLowerCase().endsWith(".pdf");}
 function isImage(f){const name=(f.name||"").toLowerCase();const type=(f.type||"").toLowerCase();return type.startsWith("image/")||/\.(heic|heif|jpg|jpeg|png|webp|gif|bmp|tif|tiff|avif)$/i.test(name)||type.includes("heic")||type.includes("heif");}
 function add(files){const pdfMode=state.mode==="pdf"||state.mode==="pdfpdf";const good=Array.from(files).filter(f=>pdfMode?isPdf(f):isImage(f));if(!good.length){message(pdfMode?"Please choose a PDF file.":"Choose an image, including HEIC or HEIF.",true);return;}state.files=pdfMode?good.slice(0,1):state.files.concat(good).slice(0,20);render();message("");}
-async function normalizeImage(file){const name=(file.name||"image").toLowerCase();const type=(file.type||"").toLowerCase();const isHeic=/\.(heic|heif)$/i.test(name)||type.includes("heic")||type.includes("heif");if(isHeic){if(typeof window.HeicTo!=="function")throw Error("HEIC decoder did not load. Check your internet connection, refresh the page and try again.");try{const result=await window.HeicTo({blob:file,type:"image/jpeg",quality:0.92});if(!(result instanceof Blob))throw Error("HEIC decoder returned an invalid image.");return {blob:result,name:(file.name||"image").replace(/\.(heic|heif)$/i,"")+".jpg"};}catch(err){console.error("HEIC conversion error:",err);throw Error("This iPhone HEIC photo could not be decoded. Try sharing the original photo again, or save it as JPEG and retry.");}}return {blob:file,name:file.name||"image"};}
+async function normalizeImage(file){
+  const name=(file.name||"image").toLowerCase();
+  const type=(file.type||"").toLowerCase();
+  const isHeic=/\\.(heic|heif)$/i.test(name)||type.includes("heic")||type.includes("heif");
+  if(isHeic){
+    const decoder=window.HeicTo;
+    if(typeof decoder!=="function")throw Error("HEIC_ENGINE_NOT_LOADED: HeicTo global is missing. Check CDN/network and reload.");
+    try{
+      if(typeof decoder.isHeic==="function" && !(await decoder.isHeic(file)))throw Error("The file extension is HEIC, but its internal signature is not recognized as HEIC/HEIF.");
+      const result=await decoder({blob:file,type:"image/jpeg",quality:0.92});
+      if(!(result instanceof Blob))throw Error("Decoder returned "+Object.prototype.toString.call(result)+" instead of a Blob.");
+      return {blob:result,name:(file.name||"image").replace(/\\.(heic|heif)$/i,"")+".jpg"};
+    }catch(err){
+      console.error("Convertly HEIC diagnostic:",err);
+      const detail=err&&err.message?err.message:String(err);
+      throw Error("HEIC conversion failed: "+detail);
+    }
+  }
+  return {blob:file,name:file.name||"image"};
+}
 function loadImage(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(url);resolve(img)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Could not read image. HEIC/HEIF files need a supported browser and HEIC decoder."))};img.src=url;});}
 function blob(canvas,type,q){return new Promise((resolve,reject)=>canvas.toBlob(x=>x?resolve(x):reject(new Error("Could not create output.")),type,q));}
 function save(data,name){const url=URL.createObjectURL(data),a=document.createElement("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),20000);}
