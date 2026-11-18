@@ -78,15 +78,14 @@ async function filesToPdf(){
   const out=await PDFDocument.create();
   const quality=Number(el("pdf-quality").value)/100;
   const maxEdge=Number(el("pdf-size").value);
-  const batchSize=3;
-  for(let start=0;start<state.files.length;start+=batchSize){
-    const batch=state.files.slice(start,start+batchSize);
-    progress((start/state.files.length)*90,"Preparing files "+(start+1)+"–"+Math.min(start+batchSize,state.files.length)+" of "+state.files.length+"…");
-    const prepared=await Promise.all(batch.map(async file=>{
-      if(isPdf(file)){
-        const src=await PDFDocument.load(await file.arrayBuffer());
-        return {kind:"pdf",src};
-      }
+  for(let i=0;i<state.files.length;i++){
+    const file=state.files[i];
+    progress((i/state.files.length)*90,"Adding "+file.name+" ("+(i+1)+" of "+state.files.length+")…");await yieldToUI();
+    if(isPdf(file)){
+      const src=await PDFDocument.load(await file.arrayBuffer());
+      const pages=await out.copyPages(src,src.getPageIndices());
+      pages.forEach(p=>out.addPage(p));
+    }else{
       const normalized=await normalizeImage(file);
       const img=await loadImage(normalized.blob);
       const nw=img.naturalWidth||img.width,nh=img.naturalHeight||img.height;
@@ -98,27 +97,18 @@ async function filesToPdf(){
       ctx.fillStyle="#fff";ctx.fillRect(0,0,cw,ch);ctx.drawImage(img,0,0,cw,ch);
       const jpg=await blob(canvas,"image/jpeg",quality);
       const bytes=new Uint8Array(await jpg.arrayBuffer());
+      const embedded=await out.embedJpg(bytes);
+      const landscape=nw>nh,pageW=landscape?841.89:595.28,pageH=landscape?595.28:841.89,margin=24;
+      const fit=Math.min((pageW-margin*2)/embedded.width,(pageH-margin*2)/embedded.height);
+      const w=embedded.width*fit,h=embedded.height*fit;
+      const page=out.addPage([pageW,pageH]);
+      page.drawImage(embedded,{x:(pageW-w)/2,y:(pageH-h)/2,width:w,height:h});
       canvas.width=0;canvas.height=0;img.src="";
-      return {kind:"image",bytes,nw,nh};
-    }));
-    for(const item of prepared){
-      if(item.kind==="pdf"){
-        const pages=await out.copyPages(item.src,item.src.getPageIndices());
-        pages.forEach(p=>out.addPage(p));
-      }else{
-        const embedded=await out.embedJpg(item.bytes);
-        const landscape=item.nw>item.nh,pageW=landscape?841.89:595.28,pageH=landscape?595.28:841.89,margin=24;
-        const fit=Math.min((pageW-margin*2)/embedded.width,(pageH-margin*2)/embedded.height);
-        const w=embedded.width*fit,h=embedded.height*fit;
-        const page=out.addPage([pageW,pageH]);
-        page.drawImage(embedded,{x:(pageW-w)/2,y:(pageH-h)/2,width:w,height:h});
-      }
     }
-    await yieldToUI();
   }
   if(!out.getPageCount())throw Error("No pages were added.");
   progress(95,"Saving combined PDF…");await yieldToUI();
-  const bytes=await out.save({useObjectStreams:true});
+  const bytes=await out.save();
   save(new Blob([bytes],{type:"application/pdf"}),outputName("","pdf","convertly-combined"));
 }
 async function imagesPdf(){
