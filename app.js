@@ -106,32 +106,7 @@ async function splitPdf(){
     save(new Blob([await out.save()],{type:"application/pdf"}),outputName("-pages","pdf",base));
   }
 }
-  const {PDFDocument}=await pdfLib();
-  const src=await PDFDocument.load(await state.files[0].arrayBuffer());
-  const total=src.getPageCount(),raw=el("pages").value.trim(),ids=parsePages(raw,total);
-  if(!raw)throw Error("Enter page numbers or ranges, e.g. 1-3,5,8-10.");
-  if(!ids.length)throw Error("No valid pages found. Check the page numbers and ranges.");
-  const mode=el("split-output").value,base=stem(state.files[0].name)||"document";
-  if(mode==="separate"){
-    const JSZip=window.JSZip;
-    if(!JSZip)throw Error("ZIP library is not available. Refresh the page and try again.");
-    const zip=new JSZip();
-    for(let i=0;i<ids.length;i++){
-      const pageNo=ids[i]+1;
-      progress((i/ids.length)*90,"Extracting page "+pageNo+" ("+(i+1)+" of "+ids.length+")…");await yieldToUI();
-      const out=await PDFDocument.create(),[page]=await out.copyPages(src,[ids[i]]);
-      out.addPage(page);zip.file(base+"-page-"+String(pageNo).padStart(3,"0")+".pdf",await out.save());
-    }
-    progress(95,"Creating ZIP with individual PDF files…");await yieldToUI();
-    const zipped=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:3}});
-    save(zipped,outputName("-pages","zip",base));
-  }else{
-    const out=await PDFDocument.create(),copied=await out.copyPages(src,ids);
-    copied.forEach(p=>out.addPage(p));
-    progress(95,"Saving selected pages as one PDF…");await yieldToUI();
-    save(new Blob([await out.save()],{type:"application/pdf"}),outputName("-pages","pdf",base));
-  }
-}
+
 async function organizePdf(){const {PDFDocument,degrees}=await pdfLib();const src=await PDFDocument.load(await state.files[0].arrayBuffer());const total=src.getPageCount(),value=el("pages").value.trim();let order;if(value){order=value.split(",").map(x=>Number(x.trim())-1);if(order.some(n=>!Number.isInteger(n)||n<0||n>=total))throw Error("Use a comma-separated page order, e.g. 3,1,2. Omit pages to remove them.");}else order=src.getPageIndices();const out=await PDFDocument.create(),copied=await out.copyPages(src,order);copied.forEach(p=>out.addPage(p));const rotation=Number(el("rotation").value);out.getPages().forEach(p=>p.setRotation(degrees((p.getRotation().angle+rotation)%360)));save(new Blob([await out.save()],{type:"application/pdf"}),outputName("","pdf",stem(state.files[0].name)));}
 
 async function filesToPdf(){
