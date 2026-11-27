@@ -31,11 +31,11 @@ function progress(value,label){
 function yieldToUI(){return new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));}
 function startProgress(label="Preparing…"){progress(0,label);el("progress-panel").hidden=false;}
 function finishProgress(label="Completed!"){progress(100,label);}
-function mode(name){state.mode=name;state.files=[];state.outputFolder="";const m=modes[name];el("tool-title").textContent=m.title;el("tool-desc").textContent=m.desc;input.accept=m.accept;input.multiple=m.multiple;el("format").innerHTML=m.formats.map(f=>'<option value="'+f[0]+'">'+f[1]+'</option>').join("");if(name==="image"||name==="compress"||name==="resize")el("format").value="image/webp";el("quality-label").hidden=!["image","compress"].includes(name);el("resize-label").hidden=name!=="resize";el("pages-label").hidden=!["pdfsplit","pdforganize"].includes(name);el("rotation-label").hidden=!["pdforganize","rotate"].includes(name);el("crop-label").hidden=name!=="crop";el("image-format-note").hidden=!(["image","compress","resize","crop","rotate"].includes(name));el("pdf-format-label").hidden=!(name==="pdf"||name==="pdfextract");el("pdf-quality-label").hidden=!(name==="imagepdf"||name==="filespdf"||name==="pdfpdf"||name==="pdfcompress");el("pdf-size-label").hidden=!(name==="imagepdf"||name==="filespdf"||name==="pdfpdf"||name==="pdfcompress");el("pdf-raster-note").hidden=!(["pdfpdf","pdfcompress"].includes(name));el("format-label").hidden=name.startsWith("pdf");el("file-hint").textContent=name==="filespdf"?"PDF + JPG + PNG + WEBP + HEIC · Select multiple files":name==="pdfmerge"?"PDF documents · Select multiple files":name.startsWith("pdf")?"PDF documents · Choose one PDF file":"Images · JPG, PNG, WEBP, HEIC and HEIF";render();message("");el("workspace").scrollIntoView({behavior:"smooth",block:"center"});}
+function mode(name){state.mode=name;state.files=[];state.outputFolder="";const m=modes[name];el("tool-title").textContent=m.title;el("tool-desc").textContent=m.desc;input.accept=m.accept;input.multiple=m.multiple;el("format").innerHTML=m.formats.map(f=>'<option value="'+f[0]+'">'+f[1]+'</option>').join("");if(name==="image"||name==="compress"||name==="resize")el("format").value="image/webp";el("quality-label").hidden=!["image","compress"].includes(name);el("resize-label").hidden=name!=="resize";el("pages-label").hidden=!["pdfsplit","pdforganize"].includes(name);el("split-output-label").hidden=name!=="pdfsplit";el("split-help").hidden=name!=="pdfsplit";el("split-summary").hidden=name!=="pdfsplit";el("rotation-label").hidden=!["pdforganize","rotate"].includes(name);el("crop-label").hidden=name!=="crop";el("image-format-note").hidden=!(["image","compress","resize","crop","rotate"].includes(name));el("pdf-format-label").hidden=!(name==="pdf"||name==="pdfextract");el("pdf-quality-label").hidden=!(name==="imagepdf"||name==="filespdf"||name==="pdfpdf"||name==="pdfcompress");el("pdf-size-label").hidden=!(name==="imagepdf"||name==="filespdf"||name==="pdfpdf"||name==="pdfcompress");el("pdf-raster-note").hidden=!(["pdfpdf","pdfcompress"].includes(name));el("format-label").hidden=name.startsWith("pdf");el("file-hint").textContent=name==="filespdf"?"PDF + JPG + PNG + WEBP + HEIC · Select multiple files":name==="pdfmerge"?"PDF documents · Select multiple files":name.startsWith("pdf")?"PDF documents · Choose one PDF file":"Images · JPG, PNG, WEBP, HEIC and HEIF";render();message("");el("workspace").scrollIntoView({behavior:"smooth",block:"center"});}
 function render(){el("file-list").innerHTML="";state.files.forEach((f,i)=>{const row=document.createElement("div");row.className="file-item";const n=document.createElement("span");n.textContent=f.name;const s=document.createElement("span");s.textContent=(f.size/1024/1024).toFixed(2)+" MB";const b=document.createElement("button");b.textContent="Remove";b.onclick=()=>{state.files.splice(i,1);render()};row.append(n,s,b);el("file-list").append(row)});convert.disabled=!state.files.length;}
 function isPdf(f){return f.type==="application/pdf"||f.name.toLowerCase().endsWith(".pdf");}
 function isImage(f){const name=(f.name||"").toLowerCase();const type=(f.type||"").toLowerCase();return type.startsWith("image/")||/\.(heic|heif|jpg|jpeg|png|webp|gif|bmp|tif|tiff|avif)$/i.test(name)||type.includes("heic")||type.includes("heif");}
-function add(files,folderName=""){const list=Array.from(files);const relative=list.find(f=>f.webkitRelativePath)?.webkitRelativePath;if(folderName)state.outputFolder=folderName;else if(relative)state.outputFolder=relative.split("/")[0];const pdfMode=state.mode.startsWith("pdf");const mixed=state.mode==="filespdf";const good=list.filter(f=>mixed?(isPdf(f)||isImage(f)):pdfMode?isPdf(f):isImage(f));if(!good.length){message(mixed?"Choose PDF or image files (JPG, PNG, WEBP, HEIC).":pdfMode?"Please choose a PDF file.":"Choose an image, including HEIC or HEIF.",true);return;}state.files=pdfMode&&!["pdfmerge","filespdf"].includes(state.mode)?good.slice(0,1):state.files.concat(good);render();message(good.length+" file(s) added.");}
+function add(files,folderName=""){const list=Array.from(files);const relative=list.find(f=>f.webkitRelativePath)?.webkitRelativePath;if(folderName)state.outputFolder=folderName;else if(relative)state.outputFolder=relative.split("/")[0];const pdfMode=state.mode.startsWith("pdf");const mixed=state.mode==="filespdf";const good=list.filter(f=>mixed?(isPdf(f)||isImage(f)):pdfMode?isPdf(f):isImage(f));if(!good.length){message(mixed?"Choose PDF or image files (JPG, PNG, WEBP, HEIC).":pdfMode?"Please choose a PDF file.":"Choose an image, including HEIC or HEIF.",true);return;}state.files=pdfMode&&!["pdfmerge","filespdf"].includes(state.mode)?good.slice(0,1):state.files.concat(good);render();message(good.length+" file(s) added.");updateSplitSummary();}
 async function normalizeImage(file){
   const name=(file.name||"image").toLowerCase();
   const type=(file.type||"").toLowerCase();
@@ -69,7 +69,69 @@ async function pdfToPdf(){progress(2,"Opening PDF…");await yieldToUI();const J
 function parsePages(value,total){const set=new Set();(value||"").split(",").map(x=>x.trim()).filter(Boolean).forEach(part=>{const m=part.match(/^(\d+)\s*-\s*(\d+)$/);if(m){let a=Number(m[1]),b=Number(m[2]);if(a>b)[a,b]=[b,a];for(let n=a;n<=b;n++)if(n>=1&&n<=total)set.add(n-1);}else{const n=Number(part);if(Number.isInteger(n)&&n>=1&&n<=total)set.add(n-1);}});return [...set].sort((a,b)=>a-b);}
 async function pdfLib(){if(!window.PDFLib)throw Error("PDF editing library is loading. Refresh and try again.");return window.PDFLib;}
 async function mergePdfs(){const {PDFDocument}=await pdfLib();const out=await PDFDocument.create();for(let i=0;i<state.files.length;i++){progress((i/state.files.length)*90,"Adding PDF "+(i+1)+" of "+state.files.length+"…");await yieldToUI();const src=await PDFDocument.load(await state.files[i].arrayBuffer());const pages=await out.copyPages(src,src.getPageIndices());pages.forEach(p=>out.addPage(p));}save(new Blob([await out.save()],{type:"application/pdf"}),outputName("","pdf","merged"));}
-async function splitPdf(){const {PDFDocument}=await pdfLib();const src=await PDFDocument.load(await state.files[0].arrayBuffer());const ids=parsePages(el("pages").value,src.getPageCount());if(!ids.length)throw Error("Enter pages, for example 1-3,5.");const out=await PDFDocument.create(),copied=await out.copyPages(src,ids);copied.forEach(p=>out.addPage(p));save(new Blob([await out.save()],{type:"application/pdf"}),outputName("","pdf",stem(state.files[0].name)));}
+async function updateSplitSummary(){
+  const summary=el("split-summary");
+  if(!summary||state.mode!=="pdfsplit")return;
+  if(!state.files.length){summary.textContent="Select a PDF to see its page count.";return;}
+  try{
+    const {PDFDocument}=await pdfLib(),doc=await PDFDocument.load(await state.files[0].arrayBuffer());
+    const total=doc.getPageCount(),raw=el("pages").value.trim(),ids=parsePages(raw,total);
+    summary.textContent=raw?(ids.length+" page(s) selected from "+total+". "+(ids.length?"Ready to export.":"Valid page numbers: 1-"+total+".")):"PDF contains "+total+" pages. Enter pages or ranges to export.";
+  }catch(e){summary.textContent="Could not read PDF page count: "+e.message;}
+}
+async function splitPdf(){
+  const {PDFDocument}=await pdfLib();
+  const src=await PDFDocument.load(await state.files[0].arrayBuffer());
+  const total=src.getPageCount(),raw=el("pages").value.trim(),ids=parsePages(raw,total);
+  if(!raw)throw Error("Enter page numbers or ranges, e.g. 1-3,5,8-10.");
+  if(!ids.length)throw Error("No valid pages found. Check the page numbers and ranges.");
+  const mode=el("split-output").value,base=stem(state.files[0].name)||"document";
+  if(mode==="separate"){
+    const JSZip=window.JSZip;
+    if(!JSZip)throw Error("ZIP library is not available. Refresh the page and try again.");
+    const zip=new JSZip();
+    for(let i=0;i<ids.length;i++){
+      const pageNo=ids[i]+1;
+      progress((i/ids.length)*90,"Extracting page "+pageNo+" ("+(i+1)+" of "+ids.length+")…");await yieldToUI();
+      const out=await PDFDocument.create(),[page]=await out.copyPages(src,[ids[i]]);
+      out.addPage(page);zip.file(base+"-page-"+String(pageNo).padStart(3,"0")+".pdf",await out.save());
+    }
+    progress(95,"Creating ZIP with individual PDF files…");await yieldToUI();
+    const zipped=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:3}});
+    save(zipped,outputName("-pages","zip",base));
+  }else{
+    const out=await PDFDocument.create(),copied=await out.copyPages(src,ids);
+    copied.forEach(p=>out.addPage(p));
+    progress(95,"Saving selected pages as one PDF…");await yieldToUI();
+    save(new Blob([await out.save()],{type:"application/pdf"}),outputName("-pages","pdf",base));
+  }
+}
+  const {PDFDocument}=await pdfLib();
+  const src=await PDFDocument.load(await state.files[0].arrayBuffer());
+  const total=src.getPageCount(),raw=el("pages").value.trim(),ids=parsePages(raw,total);
+  if(!raw)throw Error("Enter page numbers or ranges, e.g. 1-3,5,8-10.");
+  if(!ids.length)throw Error("No valid pages found. Check the page numbers and ranges.");
+  const mode=el("split-output").value,base=stem(state.files[0].name)||"document";
+  if(mode==="separate"){
+    const JSZip=window.JSZip;
+    if(!JSZip)throw Error("ZIP library is not available. Refresh the page and try again.");
+    const zip=new JSZip();
+    for(let i=0;i<ids.length;i++){
+      const pageNo=ids[i]+1;
+      progress((i/ids.length)*90,"Extracting page "+pageNo+" ("+(i+1)+" of "+ids.length+")…");await yieldToUI();
+      const out=await PDFDocument.create(),[page]=await out.copyPages(src,[ids[i]]);
+      out.addPage(page);zip.file(base+"-page-"+String(pageNo).padStart(3,"0")+".pdf",await out.save());
+    }
+    progress(95,"Creating ZIP with individual PDF files…");await yieldToUI();
+    const zipped=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:3}});
+    save(zipped,outputName("-pages","zip",base));
+  }else{
+    const out=await PDFDocument.create(),copied=await out.copyPages(src,ids);
+    copied.forEach(p=>out.addPage(p));
+    progress(95,"Saving selected pages as one PDF…");await yieldToUI();
+    save(new Blob([await out.save()],{type:"application/pdf"}),outputName("-pages","pdf",base));
+  }
+}
 async function organizePdf(){const {PDFDocument,degrees}=await pdfLib();const src=await PDFDocument.load(await state.files[0].arrayBuffer());const total=src.getPageCount(),value=el("pages").value.trim();let order;if(value){order=value.split(",").map(x=>Number(x.trim())-1);if(order.some(n=>!Number.isInteger(n)||n<0||n>=total))throw Error("Use a comma-separated page order, e.g. 3,1,2. Omit pages to remove them.");}else order=src.getPageIndices();const out=await PDFDocument.create(),copied=await out.copyPages(src,order);copied.forEach(p=>out.addPage(p));const rotation=Number(el("rotation").value);out.getPages().forEach(p=>p.setRotation(degrees((p.getRotation().angle+rotation)%360)));save(new Blob([await out.save()],{type:"application/pdf"}),outputName("","pdf",stem(state.files[0].name)));}
 
 async function filesToPdf(){
@@ -181,15 +243,15 @@ el("browse-folder").onclick=e=>{e.stopPropagation();chooseFolder()};
 folderInput.onchange=()=>{add(folderInput.files);folderInput.value=""};
 drop.onclick=e=>{if(e.target.closest("button"))return;input.click()};
 drop.onkeydown=e=>{if(e.key==="Enter")input.click()};
-input.onchange=()=>{add(input.files);input.value=""};
+input.onchange=()=>{add(input.files);input.value="";updateSplitSummary()};
 el("reset").onclick=()=>{
   state.files=[];state.outputFolder="";input.value="";folderInput.value="";
-  render();el("progress-panel").hidden=true;progress(0,"Ready");
+  render();el("progress-panel").hidden=true;progress(0,"Ready");updateSplitSummary();
   el("reset").hidden=true;convert.textContent="Create PDF →";convert.disabled=true;
   message("Ready for the next batch.");
 };
 ["dragenter","dragover"].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.add("drag")}));["dragleave","drop"].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.remove("drag")}));drop.addEventListener("drop",e=>add(e.dataTransfer.files));
-el("quality").oninput=()=>el("quality-value").textContent=el("quality").value+"%";el("pdf-quality").oninput=()=>el("pdf-quality-value").textContent=el("pdf-quality").value+"%";
+el("pages").addEventListener("input",updateSplitSummary);el("quality").oninput=()=>el("quality-value").textContent=el("quality").value+"%";el("pdf-quality").oninput=()=>el("pdf-quality-value").textContent=el("pdf-quality").value+"%";
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>mode(b.dataset.mode)));
 el("year").textContent=new Date().getFullYear();mode("filespdf");requestAnimationFrame(()=>el("workspace").scrollIntoView({behavior:"instant",block:"start"}));
 })();
