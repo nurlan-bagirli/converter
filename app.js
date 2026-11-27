@@ -66,6 +66,29 @@ async function openPdf(file){if(!window.pdfjsLib)throw Error("PDF reader is load
 async function pdfWork(){progress(2,"Opening PDF…");await yieldToUI();const pdf=await openPdf(state.files[0]);if(pdf.numPages>100)throw Error("This first version supports up to 100 pages per PDF.");const type=el("pdf-format").value;for(let p=1;p<=pdf.numPages;p++){progress(((p-1)/pdf.numPages)*100,"Rendering page "+p+" of "+pdf.numPages+"…");await yieldToUI();const page=await pdf.getPage(p),view=page.getViewport({scale:1.5}),canvas=document.createElement("canvas");canvas.width=view.width;canvas.height=view.height;await page.render({canvasContext:canvas.getContext("2d"),viewport:view}).promise;save(await blob(canvas,type,.92),state.outputFolder?outputName("-page-"+p,type==="image/jpeg"?"jpg":"png"):stem(state.files[0].name)+"-page-"+p+"."+(type==="image/jpeg"?"jpg":"png"));canvas.width=0;canvas.height=0;}}
 async function pdfToPdf(){progress(2,"Opening PDF…");await yieldToUI();const JsPDF=window.jspdf?.jsPDF||window.jsPDF;if(!JsPDF)throw Error("PDF creator is not available. Refresh and try again.");const pdf=await openPdf(state.files[0]);if(pdf.numPages>100)throw Error("This first version supports up to 100 pages per PDF.");const quality=Number(el("pdf-quality").value)/100,maxEdge=Number(el("pdf-size").value);let doc=null;for(let p=1;p<=pdf.numPages;p++){progress(((p-1)/pdf.numPages)*90,"Compressing PDF page "+p+" of "+pdf.numPages+"…");await yieldToUI();const page=await pdf.getPage(p),base=page.getViewport({scale:1}),scale=Math.min(maxEdge/Math.max(base.width,base.height),2),view=page.getViewport({scale}),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.floor(view.width));canvas.height=Math.max(1,Math.floor(view.height));const ctx=canvas.getContext("2d");if(!ctx)throw Error("Could not render PDF page "+p);await page.render({canvasContext:ctx,viewport:view}).promise;const landscape=base.width>base.height;const orientation=landscape?"landscape":"portrait";if(!doc)doc=new JsPDF({orientation,unit:"pt",format:"a4",compress:true});else doc.addPage("a4",orientation);const pageW=595.28,pageH=841.89,currentW=landscape?pageH:pageW,currentH=landscape?pageW:pageH,margin=24,fit=Math.min((currentW-margin*2)/canvas.width,(currentH-margin*2)/canvas.height),w=canvas.width*fit,h=canvas.height*fit,x=(currentW-w)/2,y=(currentH-h)/2;doc.addImage(canvas.toDataURL("image/jpeg",quality),"JPEG",x,y,w,h,undefined,"FAST");canvas.width=0;canvas.height=0;page.cleanup();}if(!doc)throw Error("The PDF has no pages.");progress(95,"Saving optimized PDF…");await yieldToUI();doc.save(outputName("","pdf",stem(state.files[0].name)));}
 
+function parsePageGroups(value,total){
+  const groups=(value||"").split("*").map(x=>x.trim()).filter(Boolean);
+  const seen=new Set();
+  return groups.map(group=>{
+    const pages=[];
+    group.split(",").map(x=>x.trim()).filter(Boolean).forEach(part=>{
+      const m=part.match(/^(\d+)\s*-\s*(\d+)$/);
+      let nums=[];
+      if(m){
+        let a=Number(m[1]),b=Number(m[2]);
+        if(a>b)[a,b]=[b,a];
+        for(let n=a;n<=b;n++)nums.push(n);
+      }else if(/^\d+$/.test(part))nums=[Number(part)];
+      else throw Error("Invalid page entry: "+part+". Use format 1-3,5*6-10.");
+      nums.forEach(n=>{
+        if(n<1||n>total)throw Error("Page "+n+" does not exist. This PDF has "+total+" pages.");
+        if(!seen.has(n)){pages.push(n-1);seen.add(n);}
+      });
+    });
+    if(!pages.length)throw Error("A page group is empty or contains only duplicate pages.");
+    return pages;
+  });
+}
 function parsePages(value,total){const set=new Set();(value||"").split(",").map(x=>x.trim()).filter(Boolean).forEach(part=>{const m=part.match(/^(\d+)\s*-\s*(\d+)$/);if(m){let a=Number(m[1]),b=Number(m[2]);if(a>b)[a,b]=[b,a];for(let n=a;n<=b;n++)if(n>=1&&n<=total)set.add(n-1);}else{const n=Number(part);if(Number.isInteger(n)&&n>=1&&n<=total)set.add(n-1);}});return [...set].sort((a,b)=>a-b);}
 async function pdfLib(){if(!window.PDFLib)throw Error("PDF editing library is loading. Refresh and try again.");return window.PDFLib;}
 async function mergePdfs(){const {PDFDocument}=await pdfLib();const out=await PDFDocument.create();for(let i=0;i<state.files.length;i++){progress((i/state.files.length)*90,"Adding PDF "+(i+1)+" of "+state.files.length+"…");await yieldToUI();const src=await PDFDocument.load(await state.files[i].arrayBuffer());const pages=await out.copyPages(src,src.getPageIndices());pages.forEach(p=>out.addPage(p));}save(new Blob([await out.save()],{type:"application/pdf"}),outputName("","pdf","merged"));}
@@ -75,34 +98,40 @@ async function updateSplitSummary(){
   if(!state.files.length){summary.textContent="Select a PDF to see its page count.";return;}
   try{
     const {PDFDocument}=await pdfLib(),doc=await PDFDocument.load(await state.files[0].arrayBuffer());
-    const total=doc.getPageCount(),raw=el("pages").value.trim(),ids=parsePages(raw,total);
-    summary.textContent=raw?(ids.length+" page(s) selected from "+total+". "+(ids.length?"Ready to export.":"Valid page numbers: 1-"+total+".")):"PDF contains "+total+" pages. Enter pages or ranges to export.";
-  }catch(e){summary.textContent="Could not read PDF page count: "+e.message;}
+    const total=doc.getPageCount(),raw=el("pages").value.trim();
+    if(!raw){summary.textContent="PDF contains "+total+" pages. Enter pages, ranges or groups to export.";return;}
+    const groups=parsePageGroups(raw,total),count=groups.reduce((n,g)=>n+g.length,0);
+    summary.textContent=count+" page(s) selected from "+total+" in "+groups.length+" group(s). "+(raw.includes("*")?"Each group can become its own PDF. ":"")+"Ready to export.";
+  }catch(e){summary.textContent=e.message;}
 }
 async function splitPdf(){
   const {PDFDocument}=await pdfLib();
   const src=await PDFDocument.load(await state.files[0].arrayBuffer());
-  const total=src.getPageCount(),raw=el("pages").value.trim(),ids=parsePages(raw,total);
-  if(!raw)throw Error("Enter page numbers or ranges, e.g. 1-3,5,8-10.");
-  if(!ids.length)throw Error("No valid pages found. Check the page numbers and ranges.");
+  const total=src.getPageCount(),raw=el("pages").value.trim();
+  if(!raw)throw Error("Enter pages, ranges or groups, e.g. 1-3,5*6-10.");
+  const groups=parsePageGroups(raw,total);
   const mode=el("split-output").value,base=stem(state.files[0].name)||"document";
   if(mode==="separate"){
     const JSZip=window.JSZip;
     if(!JSZip)throw Error("ZIP library is not available. Refresh the page and try again.");
     const zip=new JSZip();
-    for(let i=0;i<ids.length;i++){
-      const pageNo=ids[i]+1;
-      progress((i/ids.length)*90,"Extracting page "+pageNo+" ("+(i+1)+" of "+ids.length+")…");await yieldToUI();
-      const out=await PDFDocument.create(),[page]=await out.copyPages(src,[ids[i]]);
-      out.addPage(page);zip.file(base+"-page-"+String(pageNo).padStart(3,"0")+".pdf",await out.save());
+    const jobs=raw.includes("*")?groups:groups.flatMap(g=>g.map(p=>[p]));
+    for(let i=0;i<jobs.length;i++){
+      const pages=jobs[i],label=pages.map(p=>p+1).join("-");
+      progress((i/jobs.length)*90,"Exporting "+(raw.includes("*")?"group ":"page ")+(i+1)+" of "+jobs.length+"…");await yieldToUI();
+      const out=await PDFDocument.create(),copied=await out.copyPages(src,pages);
+      copied.forEach(p=>out.addPage(p));
+      const filename=raw.includes("*")?base+"-group-"+String(i+1).padStart(2,"0")+".pdf":base+"-page-"+String(pages[0]+1).padStart(3,"0")+".pdf";
+      zip.file(filename,await out.save());
     }
-    progress(95,"Creating ZIP with individual PDF files…");await yieldToUI();
+    progress(95,"Creating ZIP with "+jobs.length+" PDF file(s)…");await yieldToUI();
     const zipped=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:3}});
     save(zipped,outputName("-pages","zip",base));
   }else{
-    const out=await PDFDocument.create(),copied=await out.copyPages(src,ids);
+    const all=groups.flat();
+    const out=await PDFDocument.create(),copied=await out.copyPages(src,all);
     copied.forEach(p=>out.addPage(p));
-    progress(95,"Saving selected pages as one PDF…");await yieldToUI();
+    progress(95,"Saving "+all.length+" selected pages as one PDF…");await yieldToUI();
     save(new Blob([await out.save()],{type:"application/pdf"}),outputName("-pages","pdf",base));
   }
 }
