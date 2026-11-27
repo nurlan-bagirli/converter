@@ -113,15 +113,26 @@ async function splitPdf(){
   const mode=el("split-output").value,base=stem(state.files[0].name)||"document";
   if(mode==="separate"){
     const JSZip=window.JSZip;
-    if(!JSZip)throw Error("ZIP library is not available. Refresh the page and try again.");
+    if(!JSZip)throw Error("ZIP library is not available. Refresh and try again.");
     const zip=new JSZip();
-    const jobs=raw.includes("*")?groups:groups.flatMap(g=>g.map(p=>[p]));
+    const grouped=raw.includes("*");
+    const jobs=grouped?groups:groups.flatMap(group=>group.map(pageIndex=>[pageIndex]));
     for(let i=0;i<jobs.length;i++){
-      const pages=jobs[i],label=pages.map(p=>p+1).join("-");
-      progress((i/jobs.length)*90,"Exporting "+(raw.includes("*")?"group ":"page ")+(i+1)+" of "+jobs.length+"…");await yieldToUI();
-      const out=await PDFDocument.create(),copied=await out.copyPages(src,pages);
-      copied.forEach(p=>out.addPage(p));
-      const filename=raw.includes("*")?base+"-group-"+String(i+1).padStart(2,"0")+".pdf":base+"-page-"+String(pages[0]+1).padStart(3,"0")+".pdf";
+      const pageIndexes=jobs[i];
+      const out=await PDFDocument.create();
+      for(let j=0;j<pageIndexes.length;j++){
+        const sourcePageIndex=pageIndexes[j];
+        progress(((i+(j/pageIndexes.length))/jobs.length)*90,
+          "Copying source page "+(sourcePageIndex+1)+" ("+(j+1)+" of "+pageIndexes.length+")…");
+        await yieldToUI();
+        const copied=await out.copyPages(src,[sourcePageIndex]);
+        if(copied.length!==1)throw Error("Could not copy source page "+(sourcePageIndex+1)+".");
+        out.addPage(copied[0]);
+      }
+      const pageNumbers=pageIndexes.map(index=>index+1);
+      const filename=grouped
+        ?base+"-group-"+String(i+1).padStart(2,"0")+"-pages-"+pageNumbers.join("-")+".pdf"
+        :base+"-page-"+String(pageNumbers[0]).padStart(3,"0")+".pdf";
       zip.file(filename,await out.save());
     }
     progress(95,"Creating ZIP with "+jobs.length+" PDF file(s)…");await yieldToUI();
@@ -129,13 +140,17 @@ async function splitPdf(){
     save(zipped,outputName("-pages","zip",base));
   }else{
     const all=groups.flat();
-    const out=await PDFDocument.create(),copied=await out.copyPages(src,all);
-    copied.forEach(p=>out.addPage(p));
+    const out=await PDFDocument.create();
+    for(let i=0;i<all.length;i++){
+      progress((i/all.length)*90,"Adding source page "+(all[i]+1)+" ("+(i+1)+" of "+all.length+")…");
+      await yieldToUI();
+      const copied=await out.copyPages(src,[all[i]]);
+      out.addPage(copied[0]);
+    }
     progress(95,"Saving "+all.length+" selected pages as one PDF…");await yieldToUI();
     save(new Blob([await out.save()],{type:"application/pdf"}),outputName("-pages","pdf",base));
   }
 }
-
 async function organizePdf(){const {PDFDocument,degrees}=await pdfLib();const src=await PDFDocument.load(await state.files[0].arrayBuffer());const total=src.getPageCount(),value=el("pages").value.trim();let order;if(value){order=value.split(",").map(x=>Number(x.trim())-1);if(order.some(n=>!Number.isInteger(n)||n<0||n>=total))throw Error("Use a comma-separated page order, e.g. 3,1,2. Omit pages to remove them.");}else order=src.getPageIndices();const out=await PDFDocument.create(),copied=await out.copyPages(src,order);copied.forEach(p=>out.addPage(p));const rotation=Number(el("rotation").value);out.getPages().forEach(p=>p.setRotation(degrees((p.getRotation().angle+rotation)%360)));save(new Blob([await out.save()],{type:"application/pdf"}),outputName("","pdf",stem(state.files[0].name)));}
 
 async function filesToPdf(){
